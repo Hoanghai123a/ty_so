@@ -31,9 +31,6 @@ function CounterCard({
   onDelete,
   onTransfer,
   onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
   isDragging,
   isDropTarget,
   canTransfer,
@@ -52,16 +49,17 @@ function CounterCard({
     <article
       className={cardClassName}
       draggable={false}
+      data-counter-id={counter.id}
       aria-label={`Card ${counter.name}. Kéo để chuyển điểm.`}
       aria-grabbed={isDragging}
       onPointerDown={(event) => onPointerDown(counter.id, event)}
-      onPointerMove={(event) => onPointerMove(counter.id, event)}
-      onPointerUp={(event) => onPointerUp(counter.id, event)}
-      onPointerCancel={onPointerCancel}
     >
       <div className="counter-card__topline">
         <h2 className="counter-card__name">{counter.name}</h2>
         <div className="counter-card__tools">
+          <span className="counter-card__drag-handle" aria-hidden="true" title="Kéo card">
+            ⠿
+          </span>
           <button
             className="icon-button"
             type="button"
@@ -562,19 +560,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    function cancelPointerDrag() {
-      pointerDragRef.current = null;
-      setDraggingCounterId(null);
-      setDropTargetCounterId(null);
-    }
-
-    window.addEventListener("pointerup", cancelPointerDrag);
-    window.addEventListener("pointercancel", cancelPointerDrag);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
     return () => {
-      window.removeEventListener("pointerup", cancelPointerDrag);
-      window.removeEventListener("pointercancel", cancelPointerDrag);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
     };
-  }, []);
+  }, [counters]);
 
   function changeScore(id, amount) {
     setAppState((current) => ({
@@ -671,6 +665,8 @@ function App() {
     if (
       counters.length < 2 ||
       !event.isPrimary ||
+      (event.pointerType === "touch" &&
+        !event.target.closest?.(".counter-card__drag-handle")) ||
       (event.pointerType === "mouse" && event.button !== 0) ||
       event.target.closest?.("button, input, select, textarea, a")
     ) {
@@ -684,16 +680,19 @@ function App() {
       startY: event.clientY,
       active: false,
     };
+    event.preventDefault();
   }
 
-  function handlePointerMove(counterId, event) {
+  function counterIdAtPoint(event) {
+    return document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest("[data-counter-id]")
+      ?.dataset.counterId;
+  }
+
+  function handlePointerMove(event) {
     const pointerDrag = pointerDragRef.current;
-    if (
-      !pointerDrag ||
-      pointerDrag.pointerId !== event.pointerId
-    ) {
-      return;
-    }
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
 
     const distance = Math.hypot(
       event.clientX - pointerDrag.startX,
@@ -704,12 +703,13 @@ function App() {
     pointerDrag.active = true;
     event.preventDefault();
     setDraggingCounterId(pointerDrag.sourceId);
+    const counterId = counterIdAtPoint(event);
     setDropTargetCounterId(
-      pointerDrag.sourceId === counterId ? null : counterId,
+      counterId && pointerDrag.sourceId !== counterId ? counterId : null,
     );
   }
 
-  function handlePointerUp(counterId, event) {
+  function handlePointerUp(event) {
     const pointerDrag = pointerDragRef.current;
     if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
 
@@ -717,12 +717,13 @@ function App() {
 
     const wasDragging = pointerDrag.active;
     const sourceId = pointerDrag.sourceId;
+    const targetId = counterIdAtPoint(event);
     setDraggingCounterId(null);
     setDropTargetCounterId(null);
-    if (!wasDragging || sourceId === counterId) return;
+    if (!wasDragging || !targetId || sourceId === targetId) return;
 
     event.preventDefault();
-    openTransfer(sourceId, counterId);
+    openTransfer(sourceId, targetId);
   }
 
   function handlePointerCancel() {
@@ -891,8 +892,6 @@ function App() {
               "--max-cards-per-row": cardsPerRow,
               "--grid-rows": gridRows,
             }}
-            onPointerUp={(event) => handlePointerUp(null, event)}
-            onPointerCancel={handlePointerCancel}
           >
             {counters.map((counter) => (
               <CounterCard
@@ -907,9 +906,6 @@ function App() {
                   setDialog({ type: "delete", counter: selected })
                 }
                 onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerCancel}
                 isDragging={draggingCounterId === counter.id}
                 isDropTarget={dropTargetCounterId === counter.id}
                 canTransfer={counters.length > 1}

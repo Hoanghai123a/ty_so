@@ -200,6 +200,7 @@ h1 {
 
 .counter-card--draggable {
   cursor: grab;
+  user-select: none;
 }
 
 .counter-card--draggable:active {
@@ -236,6 +237,20 @@ h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.counter-card__drag-handle {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #668084;
+  cursor: grab;
+  font-size: 1.2rem;
+  line-height: 1;
+  touch-action: none;
+  user-select: none;
 }
 
 .icon-button {
