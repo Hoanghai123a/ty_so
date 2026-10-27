@@ -10,6 +10,7 @@ import {
   transferScore,
   writeState,
 } from "./counter-state.js";
+import { parseQrLinks, qrImageUrl } from "./qr-links.js";
 import "./styles.css";
 
 function formatScore(score) {
@@ -29,7 +30,6 @@ function CounterCard({
   onChangeScore,
   onEdit,
   onDelete,
-  onTransfer,
   onPointerDown,
   isDragging,
   isDropTarget,
@@ -60,16 +60,6 @@ function CounterCard({
           <span className="counter-card__drag-handle" aria-hidden="true" title="Kéo card">
             ⠿
           </span>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={`Chuyển điểm từ ${counter.name}`}
-            title="Chuyển điểm"
-            disabled={!canTransfer}
-            onClick={() => onTransfer(counter.id)}
-          >
-            ⇄
-          </button>
           <button
             className="icon-button"
             type="button"
@@ -231,6 +221,46 @@ function SettingsDialog({ maxCardsPerRow, onChange, onClose }) {
             Đóng
           </button>
         </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function QrDialog({ links, error, onClose }) {
+  return (
+    <Dialog title="Mã QR" className="dialog-panel--qr" onClose={onClose}>
+      <div className="qr-dialog-body">
+        <div className="qr-dialog-toolbar">
+          <p className="field-hint">
+            Nguồn: <code>public/qr-links.txt</code>
+          </p>
+        </div>
+        {error && <p className="field-error">{error}</p>}
+        {links.length > 0 ? (
+          <div className="qr-grid">
+            {links.map((entry) => (
+              <article className="qr-card" key={`${entry.name}-${entry.url}`}>
+                <img
+                  className="qr-image"
+                  src={qrImageUrl(entry.url)}
+                  alt={`Mã QR ${entry.name}`}
+                  loading="lazy"
+                />
+                <strong className="qr-card__name">{entry.name}</strong>
+                <a
+                  className="qr-card__link"
+                  href={entry.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Mở đường link
+                </a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="dialog-message">Chưa có dòng hợp lệ trong file.</p>
+        )}
       </div>
     </Dialog>
   );
@@ -491,7 +521,7 @@ function DeleteDialog({ counter, onClose, onConfirm }) {
   );
 }
 
-function Dialog({ title, onClose, children }) {
+function Dialog({ title, onClose, children, className = "" }) {
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") onClose();
@@ -509,7 +539,7 @@ function Dialog({ title, onClose, children }) {
       }}
     >
       <section
-        className="dialog-panel"
+        className={`dialog-panel ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
@@ -534,12 +564,41 @@ function Dialog({ title, onClose, children }) {
 function App() {
   const [appState, setAppState] = useState(() => readState());
   const [dialog, setDialog] = useState(null);
+  const [qrLinks, setQrLinks] = useState([]);
+  const [qrError, setQrError] = useState("");
   const [draggingCounterId, setDraggingCounterId] = useState(null);
   const [dropTargetCounterId, setDropTargetCounterId] = useState(null);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const pendingChangesRef = useRef(new Map());
   const pointerDragRef = useRef(null);
   const { counters, history, settings } = appState;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/qr-links.txt", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("QR file unavailable");
+        return response.text();
+      })
+      .then((text) => {
+        if (cancelled) return;
+        const parsedLinks = parseQrLinks(text);
+        setQrLinks(parsedLinks);
+        setQrError(
+          parsedLinks.length > 0
+            ? ""
+            : "Chưa có dòng hợp lệ trong public/qr-links.txt.",
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setQrError("Không thể đọc public/qr-links.txt.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -820,6 +879,10 @@ function App() {
     setDialog(null);
   }
 
+  function openQrDialog() {
+    setDialog({ type: "qr" });
+  }
+
   const availableWidth = Math.min(
     1180,
     viewportWidth - (viewportWidth <= 760 ? 32 : 48),
@@ -845,13 +908,23 @@ function App() {
         <header className="app-header">
           <div>
             <p className="eyebrow">THEO DÕI ĐIỂM</p>
-            <h1>Bộ đếm</h1>
+            <div className="app-brand">
+              <img className="app-logo" src="/h2-billiard.png" alt="H2 Billiard" />
+              <h1>Bộ đếm</h1>
+            </div>
           </div>
           <div className="header-actions">
             <span className="save-status">
               <span className="save-status__dot" aria-hidden="true" />
               Tự lưu trên thiết bị
             </span>
+            <button
+              className="button button--qr"
+              type="button"
+              onClick={openQrDialog}
+            >
+              Mã QR{qrLinks.length > 0 ? ` (${qrLinks.length})` : ""}
+            </button>
             <button
               className="button button--secondary"
               type="button"
@@ -898,7 +971,6 @@ function App() {
                 key={counter.id}
                 counter={counter}
                 onChangeScore={changeScore}
-                onTransfer={(sourceId) => openTransfer(sourceId)}
                 onEdit={(selected) =>
                   setDialog({ type: "edit", counter: selected })
                 }
@@ -978,6 +1050,13 @@ function App() {
         <SettingsDialog
           maxCardsPerRow={settings.maxCardsPerRow}
           onChange={updateMaxCardsPerRow}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.type === "qr" && (
+        <QrDialog
+          links={qrLinks}
+          error={qrError}
           onClose={() => setDialog(null)}
         />
       )}

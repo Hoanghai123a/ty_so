@@ -8,6 +8,18 @@ import {
   resetScores,
   transferScore,
 } from "./src/counter-state.js";
+import { parseQrLinks, qrImageUrl } from "./src/qr-links.js";
+
+test("đọc tên và đường link QR từ từng dòng", () => {
+  assert.deepEqual(parseQrLinks(
+    "Facebook | https://facebook.com/h2\nZalo\thttps://zalo.me/h2\nWebsite https://h2billiard.vn\nDòng lỗi",
+  ), [
+    { name: "Facebook", url: "https://facebook.com/h2" },
+    { name: "Zalo", url: "https://zalo.me/h2" },
+    { name: "Website", url: "https://h2billiard.vn" },
+  ]);
+  assert.match(qrImageUrl("https://example.com?a=1"), /data=https%3A%2F%2Fexample.com%3Fa%3D1$/);
+});
 
 test("khôi phục bộ đếm và lịch sử chung đã lưu", () => {
   const state = parseStoredState(
