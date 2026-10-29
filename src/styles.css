@@ -530,6 +530,11 @@ h1 {
   width: min(720px, 100%);
 }
 
+.dialog-panel--settings .dialog-form {
+  max-height: min(72vh, 620px);
+  overflow-y: auto;
+}
+
 .dialog-heading {
   display: flex;
   align-items: center;
@@ -569,6 +574,24 @@ h1 {
   color: #173b43;
   background: #fbfdfd;
   font-size: 1rem;
+}
+
+.qr-settings {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e5eeee;
+}
+
+.qr-settings__input {
+  min-height: 150px;
+  padding: 12px 15px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.qr-settings__actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .text-input:focus {

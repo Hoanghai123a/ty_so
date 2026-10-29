@@ -190,9 +190,34 @@ function HistoryDialog({ history, onClose }) {
   );
 }
 
-function SettingsDialog({ maxCardsPerRow, onChange, onClose }) {
+function SettingsDialog({
+  maxCardsPerRow,
+  onChange,
+  qrText,
+  qrDefaultText,
+  qrHasOverride,
+  qrReady,
+  onSaveQr,
+  onResetQr,
+  onClose,
+}) {
+  const [draft, setDraft] = useState(qrText);
+  const [qrError, setQrError] = useState("");
+
+  function saveQrSettings(event) {
+    event.preventDefault();
+    const links = parseQrLinks(draft);
+    const rows = draft.split(/\r?\n/).filter((line) => line.trim());
+    if (!links.length || links.length !== rows.length) {
+      setQrError("Mỗi dòng cần đúng định dạng: Tên | https://duong-link");
+      return;
+    }
+
+    setQrError(onSaveQr(draft) ? "" : "Không thể lưu cài đặt trên thiết bị này.");
+  }
+
   return (
-    <Dialog title="Cài đặt hiển thị" onClose={onClose}>
+    <Dialog title="Cài đặt hiển thị" className="dialog-panel--settings" onClose={onClose}>
       <div className="dialog-form">
         <label className="field-label" htmlFor="max-cards-per-row">
           Số card tối đa mỗi hàng
@@ -212,6 +237,52 @@ function SettingsDialog({ maxCardsPerRow, onChange, onClose }) {
         <p className="field-hint">
           Màn hình hẹp sẽ tự chuyển về một cột để dễ thao tác.
         </p>
+        <form className="qr-settings" onSubmit={saveQrSettings}>
+          <label className="field-label" htmlFor="qr-links-settings">
+            Danh sách mã QR
+          </label>
+          <textarea
+            id="qr-links-settings"
+            className="text-input qr-settings__input"
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              setQrError("");
+            }}
+            placeholder="Tên | https://duong-link"
+            disabled={!qrReady}
+            spellCheck="false"
+          />
+          <p className="field-hint">
+            {qrReady
+              ? qrHasOverride
+                ? "Đang dùng danh sách đã lưu riêng trên thiết bị này."
+                : "Đang dùng mặc định từ public/qr-links.txt."
+              : "Đang tải cấu hình mặc định..."}
+          </p>
+          {qrError && <p className="field-error">{qrError}</p>}
+          <div className="dialog-actions qr-settings__actions">
+            {qrHasOverride && (
+              <button
+                className="button button--secondary"
+                type="button"
+                onClick={() => {
+                  if (!onResetQr()) setQrError("Không thể khôi phục cài đặt trên thiết bị này.");
+                  else {
+                    setDraft(qrDefaultText);
+                    setQrError("");
+                  }
+                }}
+                disabled={!qrReady}
+              >
+                Dùng mặc định
+              </button>
+            )}
+            <button className="button button--primary" type="submit" disabled={!qrReady}>
+              Lưu mã QR
+            </button>
+          </div>
+        </form>
         <div className="dialog-actions">
           <button
             className="button button--secondary"
@@ -226,13 +297,13 @@ function SettingsDialog({ maxCardsPerRow, onChange, onClose }) {
   );
 }
 
-function QrDialog({ links, error, onClose }) {
+function QrDialog({ links, error, hasOverride, onClose }) {
   return (
     <Dialog title="Mã QR" className="dialog-panel--qr" onClose={onClose}>
       <div className="qr-dialog-body">
         <div className="qr-dialog-toolbar">
           <p className="field-hint">
-            Nguồn: <code>public/qr-links.txt</code>
+            {hasOverride ? "Danh sách tùy chỉnh trên thiết bị" : "Mặc định: public/qr-links.txt"}
           </p>
         </div>
         {error && <p className="field-error">{error}</p>}
@@ -566,12 +637,30 @@ function App() {
   const [dialog, setDialog] = useState(null);
   const [qrLinks, setQrLinks] = useState([]);
   const [qrError, setQrError] = useState("");
+  const [qrDefaultText, setQrDefaultText] = useState("");
+  const [qrText, setQrText] = useState("");
+  const [qrHasOverride, setQrHasOverride] = useState(false);
+  const [qrReady, setQrReady] = useState(false);
   const [draggingCounterId, setDraggingCounterId] = useState(null);
   const [dropTargetCounterId, setDropTargetCounterId] = useState(null);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const pendingChangesRef = useRef(new Map());
   const pointerDragRef = useRef(null);
   const { counters, history, settings } = appState;
+  const qrStorageKey = "ty_so.qr_links.v1";
+
+  function applyQrText(text, hasOverride) {
+    const parsedLinks = parseQrLinks(text);
+    setQrText(text);
+    setQrLinks(parsedLinks);
+    setQrHasOverride(hasOverride);
+    setQrError(
+      parsedLinks.length > 0
+        ? ""
+        : "Chưa có dòng hợp lệ trong " +
+            (hasOverride ? "cài đặt trên thiết bị." : "public/qr-links.txt."),
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -583,16 +672,27 @@ function App() {
       })
       .then((text) => {
         if (cancelled) return;
-        const parsedLinks = parseQrLinks(text);
-        setQrLinks(parsedLinks);
-        setQrError(
-          parsedLinks.length > 0
-            ? ""
-            : "Chưa có dòng hợp lệ trong public/qr-links.txt.",
-        );
+        setQrDefaultText(text);
+        let savedText = null;
+        try {
+          savedText = localStorage.getItem(qrStorageKey);
+        } catch {
+          // Use the admin defaults when local storage is unavailable.
+        }
+        applyQrText(savedText ?? text, savedText !== null);
+        setQrReady(true);
       })
       .catch(() => {
-        if (!cancelled) setQrError("Không thể đọc public/qr-links.txt.");
+        if (cancelled) return;
+        let savedText = null;
+        try {
+          savedText = localStorage.getItem(qrStorageKey);
+        } catch {
+          // Keep the error visible when neither source can be read.
+        }
+        if (savedText !== null) applyQrText(savedText, true);
+        else setQrError("Không thể đọc public/qr-links.txt.");
+        setQrReady(true);
       });
 
     return () => {
@@ -802,6 +902,26 @@ function App() {
       ...current,
       settings: { ...current.settings, maxCardsPerRow },
     }));
+  }
+
+  function saveQrText(text) {
+    try {
+      localStorage.setItem(qrStorageKey, text);
+      applyQrText(text, true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function resetQrText() {
+    try {
+      localStorage.removeItem(qrStorageKey);
+      applyQrText(qrDefaultText, false);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function saveCounter({ name, score }) {
@@ -1050,6 +1170,12 @@ function App() {
         <SettingsDialog
           maxCardsPerRow={settings.maxCardsPerRow}
           onChange={updateMaxCardsPerRow}
+          qrText={qrText}
+          qrDefaultText={qrDefaultText}
+          qrHasOverride={qrHasOverride}
+          qrReady={qrReady}
+          onSaveQr={saveQrText}
+          onResetQr={resetQrText}
           onClose={() => setDialog(null)}
         />
       )}
@@ -1057,6 +1183,7 @@ function App() {
         <QrDialog
           links={qrLinks}
           error={qrError}
+          hasOverride={qrHasOverride}
           onClose={() => setDialog(null)}
         />
       )}
