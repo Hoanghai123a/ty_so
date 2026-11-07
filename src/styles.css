@@ -1029,7 +1029,8 @@ h1 {
     align-items: center;
     flex-direction: row;
     justify-content: flex-end;
-    overflow-x: auto;
+    gap: 8px;
+    overflow: hidden;
   }
 
   .app-shell[data-grid-rows="3"] .header-actions .button {
@@ -1095,6 +1096,40 @@ h1 {
     padding: 0;
     font-size: 2.5rem;
     letter-spacing: 0;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 650px) and (max-width: 640px) {
+  .app-shell[data-grid-rows="3"] .app-header {
+    min-height: 0;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-brand {
+    min-height: 32px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions .button {
+    width: 100%;
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 }
 
