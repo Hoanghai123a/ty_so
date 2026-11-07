@@ -982,47 +982,47 @@ h1 {
   }
 }
 
-@media (orientation: landscape) {
-  .app-shell[data-grid-rows="3"] {
+.app-shell[data-grid-rows="3"] {
     height: 100dvh;
     min-height: 0;
     overflow: hidden;
     padding: 6px 10px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .app-frame {
+.app-shell[data-grid-rows="3"] .app-frame {
     height: 100%;
     min-height: 0;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .app-header {
+.app-shell[data-grid-rows="3"] .app-header {
     min-height: 40px;
+    flex: none;
     align-items: center;
     flex-direction: row;
     gap: 10px;
     margin-bottom: 6px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .eyebrow,
-  .app-shell[data-grid-rows="3"] .save-status,
-  .app-shell[data-grid-rows="3"] .app-footer {
+.app-shell[data-grid-rows="3"] .eyebrow,
+.app-shell[data-grid-rows="3"] .save-status,
+.app-shell[data-grid-rows="3"] .app-footer {
     display: none;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .app-brand {
+.app-shell[data-grid-rows="3"] .app-brand {
     gap: 7px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .app-logo {
+.app-shell[data-grid-rows="3"] .app-logo {
     width: 36px;
     height: 36px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] h1 {
+.app-shell[data-grid-rows="3"] h1 {
     font-size: 1.35rem;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .header-actions {
+.app-shell[data-grid-rows="3"] .header-actions {
     min-width: 0;
     width: auto;
     flex: 1;
@@ -1031,28 +1031,29 @@ h1 {
     justify-content: flex-end;
     gap: 8px;
     overflow: hidden;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .header-actions .button {
+.app-shell[data-grid-rows="3"] .header-actions .button {
     width: auto;
     min-height: 36px;
     flex: none;
     padding: 0 12px;
     font-size: 0.8rem;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .counter-grid {
+.app-shell[data-grid-rows="3"] .counter-grid {
     min-height: 0;
-    flex: 1;
+    flex: 0 1 1092px;
     grid-template-columns: 1fr;
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: 6px;
     overflow: hidden;
-    height: auto;
+    height: 1092px;
+    max-height: 1092px;
     padding: 0;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .counter-card {
+.app-shell[data-grid-rows="3"] .counter-card {
     min-height: 0;
     height: 100%;
     display: grid;
@@ -1061,42 +1062,41 @@ h1 {
     gap: 10px;
     padding: 6px 10px;
     border-radius: 12px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .counter-card__name {
+.app-shell[data-grid-rows="3"] .counter-card__name {
     margin: 0;
     font-size: 1rem;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .counter-card__tools {
+.app-shell[data-grid-rows="3"] .counter-card__tools {
     gap: 2px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .counter-card__drag-handle,
-  .app-shell[data-grid-rows="3"] .icon-button {
+.app-shell[data-grid-rows="3"] .counter-card__drag-handle,
+.app-shell[data-grid-rows="3"] .icon-button {
     width: 36px;
     height: 36px;
     border-radius: 9px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .score-row {
+.app-shell[data-grid-rows="3"] .score-row {
     min-height: 0;
     height: 100%;
     gap: 8px;
     margin: 0;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .score-button {
+.app-shell[data-grid-rows="3"] .score-button {
     height: min(64px, 100%);
     min-height: 44px;
     border-radius: 10px;
-  }
+}
 
-  .app-shell[data-grid-rows="3"] .score {
+.app-shell[data-grid-rows="3"] .score {
     padding: 0;
     font-size: 2.5rem;
     letter-spacing: 0;
-  }
 }
 
 @media (orientation: landscape) and (max-width: 640px) {
@@ -1130,6 +1130,46 @@ h1 {
     padding: 0 4px;
     font-size: 0.72rem;
     white-space: nowrap;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 640px) {
+  .app-shell[data-grid-rows="3"] .app-header {
+    min-height: 0;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-brand {
+    min-height: 32px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions .button {
+    width: 100%;
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-card {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
   }
 }
 
