@@ -1007,7 +1007,7 @@ function App() {
       : null;
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-grid-rows={counterGrid.rows}>
       <div className="app-frame">
         <header className="app-header">
           <div>

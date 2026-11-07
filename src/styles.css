@@ -982,6 +982,122 @@ h1 {
   }
 }
 
+@media (orientation: landscape) and (max-height: 650px) {
+  .app-shell[data-grid-rows="3"] {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: 6px 10px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-frame {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-header {
+    min-height: 40px;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .app-shell[data-grid-rows="3"] .eyebrow,
+  .app-shell[data-grid-rows="3"] .save-status,
+  .app-shell[data-grid-rows="3"] .app-footer {
+    display: none;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-brand {
+    gap: 7px;
+  }
+
+  .app-shell[data-grid-rows="3"] .app-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-shell[data-grid-rows="3"] h1 {
+    font-size: 1.35rem;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions {
+    min-width: 0;
+    width: auto;
+    flex: 1;
+    align-items: center;
+    flex-direction: row;
+    justify-content: flex-end;
+    overflow-x: auto;
+  }
+
+  .app-shell[data-grid-rows="3"] .header-actions .button {
+    width: auto;
+    min-height: 36px;
+    flex: none;
+    padding: 0 12px;
+    font-size: 0.8rem;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-grid {
+    min-height: 0;
+    flex: 1;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    overflow: hidden;
+    height: auto;
+    padding: 0;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-card {
+    min-height: 0;
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(220px, 32%) minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-card__name {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-card__tools {
+    gap: 2px;
+  }
+
+  .app-shell[data-grid-rows="3"] .counter-card__drag-handle,
+  .app-shell[data-grid-rows="3"] .icon-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .app-shell[data-grid-rows="3"] .score-row {
+    min-height: 0;
+    height: 100%;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .app-shell[data-grid-rows="3"] .score-button {
+    height: min(64px, 100%);
+    min-height: 44px;
+    border-radius: 10px;
+  }
+
+  .app-shell[data-grid-rows="3"] .score {
+    padding: 0;
+    font-size: 2.5rem;
+    letter-spacing: 0;
+  }
+}
+
 @media (max-width: 420px) {
   h1 {
     font-size: 2.2rem;
