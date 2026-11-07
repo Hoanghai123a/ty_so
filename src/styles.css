@@ -206,6 +206,11 @@ h1 {
   height: max(260px, min(calc(100dvh - 220px), 620px));
 }
 
+.counter-grid[data-rows="3"] {
+  grid-template-rows: repeat(3, minmax(360px, auto));
+  height: auto;
+}
+
 .counter-card {
   position: relative;
   min-height: 0;

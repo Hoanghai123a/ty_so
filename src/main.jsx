@@ -1065,6 +1065,7 @@ function App() {
         {counters.length > 0 ? (
           <main
             className="counter-grid"
+            data-rows={counterGrid.rows}
             style={{
               "--grid-columns": counterGrid.columns,
               "--grid-rows": counterGrid.rows,
