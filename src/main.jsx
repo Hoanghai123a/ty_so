@@ -10,6 +10,7 @@ import {
   transferScore,
   writeState,
 } from "./counter-state.js";
+import { getCounterGrid } from "./counter-layout.js";
 import { parseQrLinks, qrImageUrl } from "./qr-links.js";
 import "./styles.css";
 
@@ -31,6 +32,7 @@ function CounterCard({
   onEdit,
   onDelete,
   onPointerDown,
+  onHandleClick,
   isDragging,
   isDropTarget,
   canTransfer,
@@ -57,7 +59,23 @@ function CounterCard({
       <div className="counter-card__topline">
         <h2 className="counter-card__name">{counter.name}</h2>
         <div className="counter-card__tools">
-          <span className="counter-card__drag-handle" aria-hidden="true" title="Kéo card">
+          <span
+            className="counter-card__drag-handle"
+            role="button"
+            tabIndex="0"
+            aria-label={`Chuyển điểm từ ${counter.name}`}
+            title="Bấm để nhập điểm chuyển hoặc kéo card"
+            onClick={(event) => {
+              event.stopPropagation();
+              onHandleClick(counter.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              event.stopPropagation();
+              onHandleClick(counter.id);
+            }}
+          >
             ⠿
           </span>
           <button
@@ -191,8 +209,6 @@ function HistoryDialog({ history, onClose }) {
 }
 
 function SettingsDialog({
-  maxCardsPerRow,
-  onChange,
   qrText,
   qrDefaultText,
   qrHasOverride,
@@ -217,26 +233,8 @@ function SettingsDialog({
   }
 
   return (
-    <Dialog title="Cài đặt hiển thị" className="dialog-panel--settings" onClose={onClose}>
+    <Dialog title="Cài đặt mã QR" className="dialog-panel--settings" onClose={onClose}>
       <div className="dialog-form">
-        <label className="field-label" htmlFor="max-cards-per-row">
-          Số card tối đa mỗi hàng
-        </label>
-        <select
-          id="max-cards-per-row"
-          className="select-input"
-          value={maxCardsPerRow}
-          onChange={(event) => onChange(Number(event.target.value))}
-        >
-          {[1, 2, 3, 4].map((value) => (
-            <option key={value} value={value}>
-              {value} card mỗi hàng
-            </option>
-          ))}
-        </select>
-        <p className="field-hint">
-          Màn hình hẹp sẽ tự chuyển về một cột để dễ thao tác.
-        </p>
         <form className="qr-settings" onSubmit={saveQrSettings}>
           <label className="field-label" htmlFor="qr-links-settings">
             Danh sách mã QR
@@ -643,10 +641,10 @@ function App() {
   const [qrReady, setQrReady] = useState(false);
   const [draggingCounterId, setDraggingCounterId] = useState(null);
   const [dropTargetCounterId, setDropTargetCounterId] = useState(null);
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const pendingChangesRef = useRef(new Map());
   const pointerDragRef = useRef(null);
-  const { counters, history, settings } = appState;
+  const suppressHandleClickRef = useRef(false);
+  const { counters, history } = appState;
   const qrStorageKey = "ty_so.qr_links.v1";
 
   function applyQrText(text, hasOverride) {
@@ -698,12 +696,6 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", updateViewportWidth);
-    return () => window.removeEventListener("resize", updateViewportWidth);
   }, []);
 
   useEffect(() => {
@@ -820,12 +812,18 @@ function App() {
     setDialog({ type: "transfer", sourceId, targetId: validTargetId });
   }
 
+  function handleHandleClick(counterId) {
+    if (suppressHandleClickRef.current) {
+      suppressHandleClickRef.current = false;
+      return;
+    }
+    openTransfer(counterId);
+  }
+
   function handlePointerDown(counterId, event) {
     if (
       counters.length < 2 ||
       !event.isPrimary ||
-      (event.pointerType === "touch" &&
-        !event.target.closest?.(".counter-card__drag-handle")) ||
       (event.pointerType === "mouse" && event.button !== 0) ||
       event.target.closest?.("button, input, select, textarea, a")
     ) {
@@ -837,9 +835,9 @@ function App() {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      fromHandle: Boolean(event.target.closest?.(".counter-card__drag-handle")),
       active: false,
     };
-    event.preventDefault();
   }
 
   function counterIdAtPoint(event) {
@@ -874,7 +872,12 @@ function App() {
 
     pointerDragRef.current = null;
 
-    const wasDragging = pointerDrag.active;
+    const wasDragging =
+      pointerDrag.active ||
+      Math.hypot(
+        event.clientX - pointerDrag.startX,
+        event.clientY - pointerDrag.startY,
+      ) >= 8;
     const sourceId = pointerDrag.sourceId;
     const targetId = counterIdAtPoint(event);
     setDraggingCounterId(null);
@@ -882,7 +885,8 @@ function App() {
     if (!wasDragging || !targetId || sourceId === targetId) return;
 
     event.preventDefault();
-    openTransfer(sourceId, targetId);
+    if (pointerDrag.fromHandle) suppressHandleClickRef.current = true;
+    transferPoints({ sourceId, targetId, amount: 1 });
   }
 
   function handlePointerCancel() {
@@ -895,13 +899,6 @@ function App() {
     clearPendingChanges();
     setAppState(scope === "all" ? createDefaultState() : resetScores);
     setDialog(null);
-  }
-
-  function updateMaxCardsPerRow(maxCardsPerRow) {
-    setAppState((current) => ({
-      ...current,
-      settings: { ...current.settings, maxCardsPerRow },
-    }));
   }
 
   function saveQrText(text) {
@@ -1003,20 +1000,7 @@ function App() {
     setDialog({ type: "qr" });
   }
 
-  const availableWidth = Math.min(
-    1180,
-    viewportWidth - (viewportWidth <= 760 ? 32 : 48),
-  );
-  const columnsThatFit =
-    viewportWidth <= 760
-      ? 1
-      : Math.max(1, Math.floor((availableWidth + 16) / (256 + 16)));
-  const cardsPerRow = Math.min(
-    settings.maxCardsPerRow,
-    columnsThatFit,
-    Math.max(counters.length, 1),
-  );
-  const gridRows = Math.max(1, Math.ceil(counters.length / cardsPerRow));
+  const counterGrid = getCounterGrid(counters.length);
   const transferSource =
     dialog?.type === "transfer"
       ? counters.find((counter) => counter.id === dialog.sourceId)
@@ -1082,8 +1066,8 @@ function App() {
           <main
             className="counter-grid"
             style={{
-              "--max-cards-per-row": cardsPerRow,
-              "--grid-rows": gridRows,
+              "--grid-columns": counterGrid.columns,
+              "--grid-rows": counterGrid.rows,
             }}
           >
             {counters.map((counter) => (
@@ -1098,6 +1082,7 @@ function App() {
                   setDialog({ type: "delete", counter: selected })
                 }
                 onPointerDown={handlePointerDown}
+                onHandleClick={handleHandleClick}
                 isDragging={draggingCounterId === counter.id}
                 isDropTarget={dropTargetCounterId === counter.id}
                 canTransfer={counters.length > 1}
@@ -1168,8 +1153,6 @@ function App() {
       )}
       {dialog?.type === "settings" && (
         <SettingsDialog
-          maxCardsPerRow={settings.maxCardsPerRow}
-          onChange={updateMaxCardsPerRow}
           qrText={qrText}
           qrDefaultText={qrDefaultText}
           qrHasOverride={qrHasOverride}

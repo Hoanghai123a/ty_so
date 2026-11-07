@@ -200,7 +200,7 @@ h1 {
 
 .counter-grid {
   display: grid;
-  grid-template-columns: repeat(var(--max-cards-per-row, 2), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--grid-columns, 2), minmax(0, 1fr));
   grid-template-rows: repeat(var(--grid-rows, 1), minmax(0, 1fr));
   gap: 16px;
   height: max(260px, min(calc(100dvh - 220px), 620px));
@@ -223,6 +223,7 @@ h1 {
 
 .counter-card--draggable {
   cursor: grab;
+  touch-action: pan-y;
   user-select: none;
 }
 
@@ -908,7 +909,7 @@ h1 {
   .counter-card {
     min-height: 360px;
     height: auto;
-    padding: 20px;
+    padding: 16px;
   }
 
   .counter-card--draggable {
@@ -916,9 +917,14 @@ h1 {
   }
 
   .counter-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
+    grid-template-columns: repeat(
+      var(--grid-columns, 2),
+      minmax(min(42vw, 220px), 1fr)
+    );
+    grid-template-rows: repeat(var(--grid-rows, 1), minmax(360px, auto));
+    overflow-x: auto;
     height: auto;
+    padding-bottom: 4px;
   }
 
   .score-row {

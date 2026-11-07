@@ -9,6 +9,15 @@ import {
   transferScore,
 } from "./src/counter-state.js";
 import { parseQrLinks, qrImageUrl } from "./src/qr-links.js";
+import { getCounterGrid } from "./src/counter-layout.js";
+
+test("tự chia card theo số người", () => {
+  assert.deepEqual(getCounterGrid(2), { columns: 2, rows: 1 });
+  assert.deepEqual(getCounterGrid(3), { columns: 3, rows: 1 });
+  assert.deepEqual(getCounterGrid(4), { columns: 2, rows: 2 });
+  assert.deepEqual(getCounterGrid(5), { columns: 3, rows: 2 });
+  assert.deepEqual(getCounterGrid(8), { columns: 4, rows: 2 });
+});
 
 test("đọc tên và đường link QR từ từng dòng", () => {
   assert.deepEqual(parseQrLinks(
@@ -181,13 +190,13 @@ test("reset điểm giữ card, tên, lịch sử và cài đặt", () => {
   });
 });
 
-test("trạng thái mặc định có hai card và giới hạn card mỗi hàng hợp lệ", () => {
+test("trạng thái mặc định có hai card và bỏ cài đặt bố cục cũ", () => {
   const state = parseStoredState(
     JSON.stringify({ counters: [], history: [], settings: { maxCardsPerRow: 99 } }),
   );
 
   assert.equal(state.counters.length, 0);
-  assert.deepEqual(state.settings, { maxCardsPerRow: 4 });
+  assert.equal(state.settings, undefined);
   assert.equal(createDefaultState().counters.length, 2);
-  assert.deepEqual(createDefaultState().settings, { maxCardsPerRow: 2 });
+  assert.equal(createDefaultState().settings, undefined);
 });

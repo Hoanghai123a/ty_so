@@ -1,5 +1,4 @@
 export const STORAGE_KEY = "ty_so.counters.v1";
-export const DEFAULT_MAX_CARDS_PER_ROW = 2;
 
 export function createDefaultCounters() {
   return [
@@ -12,7 +11,6 @@ export function createDefaultState() {
   return {
     counters: createDefaultCounters(),
     history: [],
-    settings: { maxCardsPerRow: DEFAULT_MAX_CARDS_PER_ROW },
   };
 }
 
@@ -107,17 +105,6 @@ function normalizeHistory(value, counters) {
   }, []);
 }
 
-function normalizeSettings(value) {
-  const candidate = value && typeof value === "object" ? value.maxCardsPerRow : null;
-  const maxCardsPerRow = Number.isFinite(candidate)
-    ? Math.trunc(candidate)
-    : DEFAULT_MAX_CARDS_PER_ROW;
-
-  return {
-    maxCardsPerRow: Math.min(4, Math.max(1, maxCardsPerRow)),
-  };
-}
-
 export function parseStoredState(raw) {
   if (!raw) return createDefaultState();
 
@@ -138,7 +125,6 @@ export function parseStoredState(raw) {
     return {
       counters,
       history: normalizeHistory(storedHistory, counters),
-      settings: normalizeSettings(!Array.isArray(parsed) ? parsed.settings : null),
     };
   } catch {
     return createDefaultState();
