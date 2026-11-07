@@ -982,7 +982,7 @@ h1 {
   }
 }
 
-@media (orientation: landscape) and (max-height: 650px) {
+@media (orientation: landscape) {
   .app-shell[data-grid-rows="3"] {
     height: 100dvh;
     min-height: 0;
@@ -1099,7 +1099,7 @@ h1 {
   }
 }
 
-@media (orientation: landscape) and (max-height: 650px) and (max-width: 640px) {
+@media (orientation: landscape) and (max-width: 640px) {
   .app-shell[data-grid-rows="3"] .app-header {
     min-height: 0;
     align-items: stretch;
