@@ -117,6 +117,11 @@ h1 {
   box-shadow: 0 0 0 4px rgba(76, 175, 115, 0.14);
 }
 
+.save-status__dot--offline {
+  background: #d66a42;
+  box-shadow: 0 0 0 4px rgba(214, 106, 66, 0.14);
+}
+
 .button {
   min-height: 50px;
   border: 0;
@@ -232,7 +237,7 @@ h1 {
 
 .counter-card--draggable {
   cursor: grab;
-  touch-action: pan-y;
+  touch-action: none;
   user-select: none;
 }
 
@@ -906,7 +911,6 @@ h1 {
   }
 
   .eyebrow,
-  .save-status,
   .app-footer {
     display: none;
   }
@@ -927,8 +931,14 @@ h1 {
   .header-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
+  }
+
+  .save-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 20px;
   }
 
   .header-actions .button {

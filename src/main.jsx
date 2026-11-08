@@ -32,6 +32,7 @@ function CounterCard({
   onEdit,
   onDelete,
   onPointerDown,
+  onCardClickCapture,
   onHandleClick,
   isDragging,
   isDropTarget,
@@ -54,6 +55,7 @@ function CounterCard({
       data-counter-id={counter.id}
       aria-label={`Card ${counter.name}. Kéo để chuyển điểm.`}
       aria-grabbed={isDragging}
+      onClickCapture={onCardClickCapture}
       onPointerDown={(event) => onPointerDown(counter.id, event)}
     >
       <div className="counter-card__topline">
@@ -632,6 +634,7 @@ function Dialog({ title, onClose, children, className = "" }) {
 
 function App() {
   const [appState, setAppState] = useState(() => readState());
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [dialog, setDialog] = useState(null);
   const [qrLinks, setQrLinks] = useState([]);
   const [qrError, setQrError] = useState("");
@@ -643,7 +646,7 @@ function App() {
   const [dropTargetCounterId, setDropTargetCounterId] = useState(null);
   const pendingChangesRef = useRef(new Map());
   const pointerDragRef = useRef(null);
-  const suppressHandleClickRef = useRef(false);
+  const suppressCardClickRef = useRef(false);
   const { counters, history } = appState;
   const qrStorageKey = "ty_so.qr_links.v1";
 
@@ -701,6 +704,16 @@ function App() {
   useEffect(() => {
     writeState(appState);
   }, [appState]);
+
+  useEffect(() => {
+    const updateConnection = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -813,11 +826,15 @@ function App() {
   }
 
   function handleHandleClick(counterId) {
-    if (suppressHandleClickRef.current) {
-      suppressHandleClickRef.current = false;
-      return;
-    }
     openTransfer(counterId);
+  }
+
+  function handleCardClickCapture(event) {
+    if (!suppressCardClickRef.current) return;
+
+    suppressCardClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   function handlePointerDown(counterId, event) {
@@ -825,17 +842,19 @@ function App() {
       counters.length < 2 ||
       !event.isPrimary ||
       (event.pointerType === "mouse" && event.button !== 0) ||
-      event.target.closest?.("button, input, select, textarea, a")
+      event.target.closest?.("input, select, textarea, a")
     ) {
       return;
     }
+
+    suppressCardClickRef.current = false;
 
     pointerDragRef.current = {
       sourceId: counterId,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      fromHandle: Boolean(event.target.closest?.(".counter-card__drag-handle")),
+      captureTarget: event.currentTarget,
       active: false,
     };
   }
@@ -857,6 +876,9 @@ function App() {
     );
     if (!pointerDrag.active && distance < 8) return;
 
+    if (!pointerDrag.active) {
+      pointerDrag.captureTarget?.setPointerCapture?.(pointerDrag.pointerId);
+    }
     pointerDrag.active = true;
     event.preventDefault();
     setDraggingCounterId(pointerDrag.sourceId);
@@ -880,16 +902,24 @@ function App() {
       ) >= 8;
     const sourceId = pointerDrag.sourceId;
     const targetId = counterIdAtPoint(event);
+    if (pointerDrag.captureTarget?.hasPointerCapture?.(pointerDrag.pointerId)) {
+      pointerDrag.captureTarget.releasePointerCapture(pointerDrag.pointerId);
+    }
     setDraggingCounterId(null);
     setDropTargetCounterId(null);
-    if (!wasDragging || !targetId || sourceId === targetId) return;
+    if (!wasDragging) return;
 
     event.preventDefault();
-    if (pointerDrag.fromHandle) suppressHandleClickRef.current = true;
+    suppressCardClickRef.current = true;
+    if (!targetId || sourceId === targetId) return;
     transferPoints({ sourceId, targetId, amount: 1 });
   }
 
   function handlePointerCancel() {
+    const pointerDrag = pointerDragRef.current;
+    if (pointerDrag?.captureTarget?.hasPointerCapture?.(pointerDrag.pointerId)) {
+      pointerDrag.captureTarget.releasePointerCapture(pointerDrag.pointerId);
+    }
     pointerDragRef.current = null;
     setDraggingCounterId(null);
     setDropTargetCounterId(null);
@@ -1019,8 +1049,13 @@ function App() {
           </div>
           <div className="header-actions">
             <span className="save-status">
-              <span className="save-status__dot" aria-hidden="true" />
-              Tự lưu trên thiết bị
+              <span
+                className={`save-status__dot ${isOnline ? "" : "save-status__dot--offline"}`}
+                aria-hidden="true"
+              />
+              <span role="status" aria-live="polite">
+                {isOnline ? "Đang trực tuyến" : "Đang ngoại tuyến"}
+              </span>
             </span>
             <button
               className="button button--qr"
@@ -1076,6 +1111,7 @@ function App() {
                 key={counter.id}
                 counter={counter}
                 onChangeScore={changeScore}
+                onCardClickCapture={handleCardClickCapture}
                 onEdit={(selected) =>
                   setDialog({ type: "edit", counter: selected })
                 }
@@ -1182,3 +1218,9 @@ const root =
   import.meta.hot?.data.root ?? createRoot(document.getElementById("root"));
 if (import.meta.hot) import.meta.hot.data.root = root;
 root.render(<App />);
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+  });
+}
