@@ -15,8 +15,8 @@ test("tự chia card theo số người", () => {
   assert.deepEqual(getCounterGrid(2), { columns: 2, rows: 1 });
   assert.deepEqual(getCounterGrid(3), { columns: 1, rows: 3 });
   assert.deepEqual(getCounterGrid(4), { columns: 2, rows: 2 });
-  assert.deepEqual(getCounterGrid(5), { columns: 3, rows: 2 });
-  assert.deepEqual(getCounterGrid(8), { columns: 4, rows: 2 });
+  assert.deepEqual(getCounterGrid(5), { columns: 2, rows: 3 });
+  assert.deepEqual(getCounterGrid(8), { columns: 2, rows: 4 });
 });
 
 test("đọc tên và đường link QR từ từng dòng", () => {
