@@ -12,10 +12,12 @@ import { parseQrLinks, qrImageUrl } from "./src/qr-links.js";
 import { getCounterGrid } from "./src/counter-layout.js";
 
 test("tự chia card theo số người", () => {
-  assert.deepEqual(getCounterGrid(2), { columns: 2, rows: 1 });
+  assert.deepEqual(getCounterGrid(1), { columns: 1, rows: 1 });
+  assert.deepEqual(getCounterGrid(2), { columns: 1, rows: 2 });
   assert.deepEqual(getCounterGrid(3), { columns: 1, rows: 3 });
-  assert.deepEqual(getCounterGrid(4), { columns: 2, rows: 2 });
+  assert.deepEqual(getCounterGrid(4), { columns: 1, rows: 4 });
   assert.deepEqual(getCounterGrid(5), { columns: 2, rows: 3 });
+  assert.deepEqual(getCounterGrid(6), { columns: 2, rows: 3 });
   assert.deepEqual(getCounterGrid(8), { columns: 2, rows: 4 });
 });
 
