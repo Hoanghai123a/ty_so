@@ -51,15 +51,17 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).then(async (response) => {
-      if (response.ok) await (await caches.open(CACHE_NAME)).put("/", response.clone());
+      if (!response.ok) return (await caches.match("/")) || (await caches.match("/index.html")) || response;
+      await (await caches.open(CACHE_NAME)).put("/", response.clone());
       return response;
-    }).catch(async () => (await caches.match("/")) || (await caches.match("/index.html"))));
+    }).catch(async () => (await caches.match("/")) || (await caches.match("/index.html")) || Response.error()));
     return;
   }
 
   if (url.pathname === "/qr-links.txt") {
     event.respondWith(fetch(request).then(async (response) => {
-      if (response.ok) await (await caches.open(CACHE_NAME)).put(url.href, response.clone());
+      if (!response.ok) return (await caches.match(url.href)) || response;
+      await (await caches.open(CACHE_NAME)).put(url.href, response.clone());
       return response;
     }).catch(async () => (await caches.match(url.href)) || Response.error()));
     return;
