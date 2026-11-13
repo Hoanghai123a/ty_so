@@ -912,7 +912,8 @@ function App() {
     event.preventDefault();
     suppressCardClickRef.current = true;
     if (!targetId || sourceId === targetId) return;
-    transferPoints({ sourceId, targetId, amount: 1 });
+    changeScore(sourceId, -1);
+    changeScore(targetId, 1);
   }
 
   function handlePointerCancel() {
