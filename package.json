@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test counter-state.test.mjs"
+    "test": "node --test counter-state.test.mjs qr-links.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.0",

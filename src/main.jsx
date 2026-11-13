@@ -227,7 +227,7 @@ function SettingsDialog({
     const links = parseQrLinks(draft);
     const rows = draft.split(/\r?\n/).filter((line) => line.trim());
     if (!links.length || links.length !== rows.length) {
-      setQrError("Mỗi dòng cần đúng định dạng: Tên | https://duong-link");
+      setQrError("Mỗi dòng cần dạng: Tên | đường link hoặc Tên | WIFI:...");
       return;
     }
 
@@ -249,7 +249,7 @@ function SettingsDialog({
               setDraft(event.target.value);
               setQrError("");
             }}
-            placeholder="Tên | https://duong-link"
+            placeholder={"Tên | https://duong-link\nTên Wi-Fi | WIFI:T:WPA;S:Ten Wi-Fi;P:Mat-khau;;"}
             disabled={!qrReady}
             spellCheck="false"
           />
@@ -318,14 +318,18 @@ function QrDialog({ links, error, hasOverride, onClose }) {
                   loading="lazy"
                 />
                 <strong className="qr-card__name">{entry.name}</strong>
-                <a
-                  className="qr-card__link"
-                  href={entry.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Mở đường link
-                </a>
+                {/^https?:\/\//i.test(entry.url) ? (
+                  <a
+                    className="qr-card__link"
+                    href={entry.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Mở đường link
+                  </a>
+                ) : (
+                  <span className="qr-card__link">Wi-Fi · Quét mã để kết nối</span>
+                )}
               </article>
             ))}
           </div>

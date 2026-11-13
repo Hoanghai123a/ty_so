@@ -6,13 +6,15 @@ export function parseQrLinks(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const match = line.match(/^(.+?)\s*(?:\||\t)\s*(https?:\/\/\S+)$/i)
+      const match = line.match(/^(.+?)\s*(?:\||\t)\s*(.+)$/)
         || line.match(/^(.+?)\s+(https?:\/\/\S+)$/i);
       if (!match) return null;
 
       const name = match[1].trim();
       const url = match[2].trim();
-      return name ? { name, url } : null;
+      const isLink = /^https?:\/\/\S+$/i.test(url);
+      const isWifi = /^WIFI:/i.test(url);
+      return name && (isLink || isWifi) ? { name, url } : null;
     })
     .filter(Boolean);
 }
