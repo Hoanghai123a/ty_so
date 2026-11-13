@@ -1044,7 +1044,7 @@ function App() {
           <div>
             <p className="eyebrow">THEO DÕI ĐIỂM</p>
             <div className="app-brand">
-              <img className="app-logo" src="/h2-billiard.png" alt="H2 Billiard" />
+              <img className="app-logo" src="/h2-billiard.png" alt="H2 tỷ số" />
               <h1>Bộ đếm</h1>
             </div>
           </div>

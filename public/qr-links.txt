@@ -1,3 +1,2 @@
-Check bill | https://h2.chamcongchua.com/ban1
-Wifi - 12341234 | https://zalo.me
-C?t camera | https://192.168.1.64:cutcam
+M?t kh?u Wifi 12341234 | WIFI:T:WPA;S:H2 BILLIARDS;P:12341234;;
+C?t camera | http://192.168.1.7:8080/channels/1/cut-cam

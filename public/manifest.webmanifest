@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "H2 Billiard - Bộ đếm điểm",
-  "short_name": "H2 Billiard",
+  "name": "H2 tỷ số - Bộ đếm điểm",
+  "short_name": "H2 tỷ số",
   "description": "Bộ đếm điểm đơn giản cho máy tính bảng.",
   "lang": "vi",
   "start_url": "/",
