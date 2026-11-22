@@ -1,1 +1,3 @@
+Mật khẩu Wi-Fi 12341234 | WIFI:T:WPA;S:H2 BILLIARDS;P:12341234;;
+Cắt camera | http://192.168.1.7:8080/channels/1/cut-cam
 Bill và Thanh toán | https://h2.chamcongchua.com/public-tables?store=v19kd7vmjapw4zq
