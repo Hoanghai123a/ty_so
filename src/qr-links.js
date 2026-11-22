@@ -22,3 +22,14 @@ export function parseQrLinks(text) {
 export function qrImageUrl(url) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}`;
 }
+
+export function parseWifiDetails(url) {
+  if (typeof url !== "string" || !/^WIFI:/i.test(url)) return null;
+
+  const field = (name) => {
+    const match = url.match(new RegExp(`(?:^|;)${name}:((?:\\\\.|[^;])*)`, "i"));
+    return match?.[1]?.replace(/\\([;:,\\])/g, "$1") || "";
+  };
+
+  return { ssid: field("S"), password: field("P") };
+}

@@ -11,7 +11,7 @@ import {
   writeState,
 } from "./counter-state.js";
 import { getCounterGrid } from "./counter-layout.js";
-import { parseQrLinks, qrImageUrl } from "./qr-links.js";
+import { parseQrLinks, parseWifiDetails, qrImageUrl } from "./qr-links.js";
 import "./styles.css";
 
 function formatScore(score) {
@@ -298,44 +298,118 @@ function SettingsDialog({
 }
 
 function QrDialog({ links, error, hasOverride, onClose }) {
+  const [visibleQr, setVisibleQr] = useState({});
+  const [copied, setCopied] = useState("");
+  const [copyError, setCopyError] = useState("");
+  const wifi = links.find((entry) => /^WIFI:/i.test(entry.url));
+  const bill = links.find((entry) => /\/public-tables(?:[/?]|$)/i.test(entry.url));
+  const camera = links.find(
+    (entry) => entry !== wifi && entry !== bill && /camera/i.test(entry.name),
+  );
+  const otherLinks = links.filter((entry) => entry !== wifi && entry !== bill && entry !== camera);
+  const wifiDetails = wifi ? parseWifiDetails(wifi.url) : null;
+
+  async function copyValue(value, label) {
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      window.setTimeout(() => setCopied(""), 1800);
+    } catch {
+      setCopyError("Không thể sao chép trên thiết bị này.");
+    }
+  }
+
+  function toggleQr(key) {
+    setVisibleQr((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  function QrPreview({ entry, label }) {
+    if (!visibleQr[label]) return null;
+    return (
+      <div className="utility-card__qr">
+        <img className="qr-image" src={qrImageUrl(entry.url)} alt={`Mã QR ${entry.name}`} />
+      </div>
+    );
+  }
+
   return (
-    <Dialog title="Mã QR" className="dialog-panel--qr" onClose={onClose}>
+    <Dialog title="Tiện ích tại bàn" className="dialog-panel--qr" onClose={onClose}>
       <div className="qr-dialog-body">
         <div className="qr-dialog-toolbar">
           <p className="field-hint">
-            {hasOverride ? "Danh sách tùy chỉnh trên thiết bị" : "Mặc định: public/qr-links.txt"}
+            {hasOverride ? "Danh sách tùy chỉnh trên thiết bị" : "Wi-Fi, bill và cắt camera"}
           </p>
         </div>
         {error && <p className="field-error">{error}</p>}
         {links.length > 0 ? (
-          <div className="qr-grid">
-            {links.map((entry) => (
-              <article className="qr-card" key={`${entry.name}-${entry.url}`}>
-                <img
-                  className="qr-image"
-                  src={qrImageUrl(entry.url)}
-                  alt={`Mã QR ${entry.name}`}
-                  loading="lazy"
-                />
-                <strong className="qr-card__name">{entry.name}</strong>
-                {/^https?:\/\//i.test(entry.url) ? (
-                  <a
-                    className="qr-card__link"
-                    href={entry.url}
-                    target="_blank"
-                    rel="noreferrer"
+          <div className="utility-list">
+            {wifi && wifiDetails && (
+              <article className="utility-card utility-card--wifi">
+                <div>
+                  <span className="utility-card__eyebrow">Kết nối nhanh</span>
+                  <h3>Wi-Fi {wifiDetails.ssid || wifi.name}</h3>
+                  <p className="wifi-password">Mật khẩu: <strong>{wifiDetails.password || "Chưa cấu hình"}</strong></p>
+                </div>
+                <div className="utility-card__actions">
+                  <button
+                    className="button button--primary"
+                    type="button"
+                    onClick={() => copyValue(wifiDetails.password, "wifi")}
+                    disabled={!wifiDetails.password}
                   >
-                    Mở đường link
-                  </a>
-                ) : (
-                  <span className="qr-card__link">Wi-Fi · Quét mã để kết nối</span>
-                )}
+                    {copied === "wifi" ? "Đã sao chép" : "Sao chép mật khẩu"}
+                  </button>
+                  <button className="button button--secondary" type="button" onClick={() => toggleQr("wifi")}>
+                    {visibleQr.wifi ? "Ẩn mã QR" : "Hiện mã QR"}
+                  </button>
+                </div>
+                <QrPreview entry={wifi} label="wifi" />
+              </article>
+            )}
+            {bill && (
+              <article className="utility-card">
+                <div>
+                  <span className="utility-card__eyebrow">Thanh toán</span>
+                  <h3>Bill và Thanh toán</h3>
+                  <p className="utility-card__description">Mở trang bill trực tiếp trên điện thoại.</p>
+                </div>
+                <div className="utility-card__actions">
+                  <a className="button button--primary" href={bill.url} target="_blank" rel="noreferrer">Xem bill</a>
+                  <button className="button button--secondary" type="button" onClick={() => toggleQr("bill")}>
+                    {visibleQr.bill ? "Ẩn mã QR" : "Hiện mã QR"}
+                  </button>
+                </div>
+                <QrPreview entry={bill} label="bill" />
+              </article>
+            )}
+            {camera && (
+              <article className="utility-card utility-card--camera">
+                <div>
+                  <span className="utility-card__eyebrow">Thiết bị tại bàn</span>
+                  <h3>Cắt camera</h3>
+                  <p className="utility-card__description">Quét mã bằng camera điện thoại để mở.</p>
+                </div>
+                <div className="utility-card__qr utility-card__qr--always">
+                  <img className="qr-image" src={qrImageUrl(camera.url)} alt="Mã QR cắt camera" />
+                </div>
+                <button className="button button--secondary" type="button" onClick={() => copyValue(camera.url, "camera")}>
+                  {copied === "camera" ? "Đã sao chép địa chỉ" : "Sao chép địa chỉ"}
+                </button>
+              </article>
+            )}
+            {otherLinks.map((entry) => (
+              <article className="utility-card" key={`${entry.name}-${entry.url}`}>
+                <h3>{entry.name}</h3>
+                <img className="qr-image" src={qrImageUrl(entry.url)} alt={`Mã QR ${entry.name}`} loading="lazy" />
+                {/^https?:\/\//i.test(entry.url) && <a className="button button--secondary" href={entry.url} target="_blank" rel="noreferrer">Mở đường link</a>}
               </article>
             ))}
           </div>
         ) : (
           <p className="dialog-message">Chưa có dòng hợp lệ trong file.</p>
         )}
+        {copyError && <p className="field-error">{copyError}</p>}
       </div>
     </Dialog>
   );

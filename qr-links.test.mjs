@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseQrLinks } from "./src/qr-links.js";
+import { parseQrLinks, parseWifiDetails } from "./src/qr-links.js";
 
 test("parses Wi-Fi QR content with spaces in the network name", () => {
   assert.deepEqual(
@@ -19,5 +19,12 @@ test("keeps web links compatible", () => {
       name: "Cắt camera",
       url: "http://192.168.1.7:8080/channels/1/cut-cam",
     }],
+  );
+});
+
+test("extracts Wi-Fi details for the quick connect card", () => {
+  assert.deepEqual(
+    parseWifiDetails("WIFI:T:WPA;S:H2 BILLIARDS;P:12341234;;"),
+    { ssid: "H2 BILLIARDS", password: "12341234" },
   );
 });
