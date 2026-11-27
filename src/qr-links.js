@@ -1,3 +1,26 @@
+export const QR_CACHE_KEY = "ty_so.qr_cache.v1";
+export const QR_CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+export function readQrCache(storage, now = Date.now()) {
+  try {
+    const cache = JSON.parse((storage ?? globalThis.localStorage)?.getItem(QR_CACHE_KEY));
+    return Array.isArray(cache?.links) && Number.isFinite(cache.savedAt)
+      ? { links: cache.links, text: typeof cache.text === "string" ? cache.text : "", hasOverride: cache.hasOverride === true, stale: now - cache.savedAt >= QR_CACHE_MAX_AGE }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeQrCache(links, storage, now = Date.now(), metadata = {}) {
+  try {
+    (storage ?? globalThis.localStorage)?.setItem(QR_CACHE_KEY, JSON.stringify({ links, savedAt: now, ...metadata }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function parseQrLinks(text) {
   if (typeof text !== "string") return [];
 

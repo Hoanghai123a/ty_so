@@ -11,7 +11,7 @@ import {
   writeState,
 } from "./counter-state.js";
 import { getCounterGrid } from "./counter-layout.js";
-import { parseQrLinks, parseWifiDetails, qrImageUrl } from "./qr-links.js";
+import { parseQrLinks, parseWifiDetails, qrImageUrl, readQrCache, writeQrCache } from "./qr-links.js";
 import "./styles.css";
 
 function formatScore(score) {
@@ -297,7 +297,7 @@ function SettingsDialog({
   );
 }
 
-function QrDialog({ links, error, hasOverride, onClose }) {
+function QrDialog({ links, error, hasOverride, onRefresh, onClose }) {
   const [visibleQr, setVisibleQr] = useState({});
   const [copied, setCopied] = useState("");
   const [copyError, setCopyError] = useState("");
@@ -340,6 +340,9 @@ function QrDialog({ links, error, hasOverride, onClose }) {
           <p className="field-hint">
             {hasOverride ? "Danh sách tùy chỉnh trên thiết bị" : "Wi-Fi, bill và cắt camera"}
           </p>
+          <button className="icon-button" type="button" aria-label="Làm mới mã QR" title="Làm mới" onClick={onRefresh}>
+            ↻
+          </button>
         </div>
         {error && <p className="field-error">{error}</p>}
         {links.length > 0 ? (
@@ -714,7 +717,8 @@ function App() {
   const [appState, setAppState] = useState(() => readState());
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [dialog, setDialog] = useState(null);
-  const [qrLinks, setQrLinks] = useState([]);
+  const [initialQrCache] = useState(() => readQrCache());
+  const [qrLinks, setQrLinks] = useState(initialQrCache?.links ?? []);
   const [qrError, setQrError] = useState("");
   const [qrDefaultText, setQrDefaultText] = useState("");
   const [qrText, setQrText] = useState("");
@@ -744,6 +748,14 @@ function App() {
   useEffect(() => {
     let cancelled = false;
 
+    if (initialQrCache && !initialQrCache.stale) {
+      setQrText(initialQrCache.text);
+      setQrHasOverride(initialQrCache.hasOverride);
+      setQrError(initialQrCache.links.length > 0 ? "" : "Chưa có dòng hợp lệ trong cài đặt trên thiết bị.");
+      setQrReady(true);
+      return () => { cancelled = true; };
+    }
+
     fetch("/qr-links.txt", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error("QR file unavailable");
@@ -759,6 +771,7 @@ function App() {
           // Use the admin defaults when local storage is unavailable.
         }
         applyQrText(savedText ?? text, savedText !== null);
+        writeQrCache(parseQrLinks(savedText ?? text), undefined, Date.now(), { text: savedText ?? text, hasOverride: savedText !== null });
         setQrReady(true);
       })
       .catch(() => {
@@ -769,7 +782,10 @@ function App() {
         } catch {
           // Keep the error visible when neither source can be read.
         }
-        if (savedText !== null) applyQrText(savedText, true);
+        if (savedText !== null) {
+          applyQrText(savedText, true);
+          writeQrCache(parseQrLinks(savedText), undefined, Date.now(), { text: savedText, hasOverride: true });
+        }
         else setQrError("Không thể đọc public/qr-links.txt.");
         setQrReady(true);
       });
@@ -1013,7 +1029,9 @@ function App() {
   function saveQrText(text) {
     try {
       localStorage.setItem(qrStorageKey, text);
+      const links = parseQrLinks(text);
       applyQrText(text, true);
+      writeQrCache(links, undefined, Date.now(), { text, hasOverride: true });
       return true;
     } catch {
       return false;
@@ -1024,10 +1042,29 @@ function App() {
     try {
       localStorage.removeItem(qrStorageKey);
       applyQrText(qrDefaultText, false);
+      writeQrCache(parseQrLinks(qrDefaultText), undefined, Date.now(), { text: qrDefaultText, hasOverride: false });
       return true;
     } catch {
       return false;
     }
+  }
+
+  function refreshQr() {
+    fetch("/qr-links.txt", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("QR file unavailable");
+        return response.text();
+      })
+      .then((text) => {
+        setQrDefaultText(text);
+        let savedText = null;
+        try { savedText = localStorage.getItem(qrStorageKey); } catch {}
+        const source = savedText ?? text;
+        applyQrText(source, savedText !== null);
+        writeQrCache(parseQrLinks(source), undefined, Date.now(), { text: source, hasOverride: savedText !== null });
+        setQrReady(true);
+      })
+      .catch(() => setQrError("Không thể làm mới danh sách mã QR."));
   }
 
   function saveCounter({ name, score }) {
@@ -1283,6 +1320,7 @@ function App() {
           links={qrLinks}
           error={qrError}
           hasOverride={qrHasOverride}
+          onRefresh={refreshQr}
           onClose={() => setDialog(null)}
         />
       )}
