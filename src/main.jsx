@@ -1146,6 +1146,42 @@ function App() {
     setDialog({ type: "qr" });
   }
 
+  async function reloadApp() {
+    let nextState = appState;
+    for (const { counterId, delta } of takePendingChanges(
+      counters.map(({ id }) => id),
+    )) {
+      const counter = nextState.counters.find(({ id }) => id === counterId);
+      if (counter) {
+        nextState = {
+          ...nextState,
+          history: appendHistoryEntry(nextState.history, counter, delta),
+        };
+      }
+    }
+    writeState(nextState);
+
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        await registration?.unregister();
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.allSettled(
+          keys
+            .filter((key) => key.startsWith("ty-so-offline-"))
+            .map((key) => caches.delete(key)),
+        );
+      }
+    } catch {
+      // Continue with a cache-busted navigation if browser cache APIs fail.
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("_reload", Date.now());
+    window.location.replace(url.href);
+  }
+
   const counterGrid = getCounterGrid(counters.length);
   const transferSource =
     dialog?.type === "transfer"
@@ -1179,6 +1215,15 @@ function App() {
               onClick={openQrDialog}
             >
               Mã QR{qrLinks.length > 0 ? ` (${qrLinks.length})` : ""}
+            </button>
+            <button
+              className="icon-button header-reload"
+              type="button"
+              aria-label="Tải lại ứng dụng và cập nhật phiên bản mới"
+              title="Tải lại để cập nhật phiên bản mới"
+              onClick={reloadApp}
+            >
+              ↻
             </button>
             <button
               className="button button--secondary"

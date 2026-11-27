@@ -980,7 +980,7 @@ h1 {
   .header-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 5px;
   }
 
@@ -1103,7 +1103,7 @@ h1 {
 
 @media (max-width: 420px) {
   .header-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .header-actions .button--add {
